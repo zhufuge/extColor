@@ -67,12 +67,12 @@ def move_center_by(center, dataSet):
     # 使用算术平均数，计算组的中心
 
     # 每个组的数量，初始化为 1，避免除0 的情况
-    numOfLabel = ones((cneter.shape[0], 1))
+    numOfLabel = ones((center.shape[0], 1))
     # center 置零，计算组的值的总和
     center = zeros(center.shape)
     for i in range(n):
-        center[labels[i]] += dataSet[i]
-        numOfLabel[labels[i]] += 1
+        center[int(labels[i])] += dataSet[i]
+        numOfLabel[int(labels[i])] += 1
 
     center = center / numOfLabel
     center = center.astype(int) # 取整
@@ -80,7 +80,7 @@ def move_center_by(center, dataSet):
     return center
 
 
-def min_distances_index(center, data):
+def min_distance_index(center, data):
     """
     Descript:
      - 计算并选择距离最短的中心点的下标
@@ -167,7 +167,7 @@ def drawColorBlock(color, blockSize, filename):
 
     numOfColor = color.shape[0]
 
-    im = Image.new('RGB', (blockSize * n, blockSize))
+    im = Image.new('RGB', (blockSize * numOfColor, blockSize))
     # 将矩阵的每个点对应的图片的每个像素
     for i in range(numOfColor):
         for j in range(blockSize * i, blockSize * (i + 1)):
@@ -229,7 +229,7 @@ def deColor(filename, numOfColor=10):
     xsize, ysize = newIm.size
     for i in range(xsize):
         for j in range(ysize):
-            min_index = min_distances_index(color, pixel[i * ysize + j])
+            min_index = min_distance_index(color, pixel[i * ysize + j])
             newIm.putpixel((i,j), tuple(color[min_index]))
 
     fname, ftype = filename.split('.')
