@@ -238,6 +238,7 @@ def deColor(filename, numOfColor=10):
 
 
 def main():
+    # 外部传参
     if len(sys.argv) == 1:
         print('Not found pictures.')
     else:
