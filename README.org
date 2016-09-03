@@ -1,4 +1,4 @@
-                [[./5_color.jpg]]
+                [[./img/6_color.jpg]]
 * extColor
 
 
@@ -15,12 +15,12 @@
 
 ** Instance
 - Original Picture
-[[./6.jpg]]
+[[./img/6.jpg]]
 - extractColor
-[[./6_color.jpg]]
+[[./img/6_color.jpg]]
 - deColor
-[[./6_de.jpg]]
+[[./img/6_de.jpg]]
 - drawStroke
-[[./6_stroke.jpg]]
+[[./img/6_stroke.jpg]]
 - picStroke
-[[./6_&stroke.jpg]]
+[[./img/6_&stroke.jpg]]
