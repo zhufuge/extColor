@@ -20,13 +20,16 @@ def K_means(dataSet, k, e):
     Return:
      - center: 包含每个簇的中心值的矩阵
     """
-    n, m = dataSet.shape        # 取行列数值
+    if len(dataSet.shape) == 1:
+        n = dataSet.shape[0]
+        m = 1
+    else:
+        n, m = dataSet.shape        # 取行列数值
 
-    # 随机创建中心点
+    # 随机选取中心点
     center = zeros((k, m))
     for i in range(k):
-        for j in range(m):
-            center[i][j] = random.randint(dataSet.min(), dataSet.max())
+        center[i] = dataSet[random.randint(0, n - 1)]
 
     # 临时矩阵，用于计算误差
     center_tmp = zeros((k, m))
@@ -39,7 +42,6 @@ def K_means(dataSet, k, e):
         center = move_center_by(center, dataSet)
 
     return center
-
 
 def move_center_by(center, dataSet):
     """
@@ -55,7 +57,11 @@ def move_center_by(center, dataSet):
     Return:
      - center: 移动后的中心点矩阵
     """
-    n, m = dataSet.shape
+    if len(dataSet.shape) == 1:
+        n = dataSet.shape[0]
+        m = 1
+    else:
+        n, m = dataSet.shape        # 取行列数值
 
     # 标签，记录每个数据点的最近中心点的下标
     labels = zeros((n, 1))
@@ -79,7 +85,6 @@ def move_center_by(center, dataSet):
 
     return center
 
-
 def min_distance_index(center, data):
     """
     Descript:
@@ -96,7 +101,7 @@ def min_distance_index(center, data):
     k = center.shape[0]
 
     # 该点到个点的每个坐标的距离
-    # 欧拉距离公式
+    # 欧几里得距离公式
     diffMat = tile(data, (k, 1)) - center
     sqDiffMat = diffMat**2
     sqDistances = sqDiffMat.sum(axis = 1)
@@ -113,7 +118,39 @@ def min_distance_index(center, data):
     return min_index
 
 
-def getPixel(filename):
+def fileNoPath(filePathName):
+    """
+    Descript:
+     - 去掉路径名
+    """
+    return filePathName.split('\\')[-1]
+
+
+def fileNewName(filename, string):
+    """
+    Descript:
+     - 重新命名文件
+    """
+    fname, ftype = filename.split('.')
+    return fname + '_' + string + '.' + ftype
+
+
+
+def getAllPixel(image):
+    """
+    Descript:
+     - 从图片对象中获得整个对象的像素矩阵
+    """
+    pixel = []
+    xsize, ysize = image.size
+    for i in range(xsize):
+        for j in range(ysize):
+            r, g, b = image.getpixel((i,j))
+            pixel.append((r, g, b))
+
+    return pixel
+
+def filePixel(filename, mode='normal'):
     """
     Descript:
      - 返回图片的像素点的rgb值的矩阵
@@ -124,13 +161,19 @@ def getPixel(filename):
     Return:
      - pixel: 像素点rgb矩阵
     """
-    pixel = []
     with Image.open(filename) as im:
-        xsize, ysize = im.size
-        for i in range(xsize):
-            for j in range(ysize):
-                r, g, b = im.getpixel((i,j))
-                pixel.append((r, g, b))
+        if mode == 'normal':
+            pass
+        elif mode == 'Thumbnail':
+            xsize, ysize = im.size
+
+            while xsize * ysize > 2**16:
+                xsize = int(xsize * 0.9)
+                ysize = int(ysize * 0.9)
+
+                im.thumbnail((xsize, ysize))
+
+        pixel = getAllPixel(im)
 
     return pixel
 
@@ -164,7 +207,6 @@ def drawColorBlock(color, blockSize, filename):
      - blockSize: 每块色块的大小
      - filename: 保存的文件名
     """
-
     numOfColor = color.shape[0]
 
     im = Image.new('RGB', (blockSize * numOfColor, blockSize))
@@ -175,7 +217,6 @@ def drawColorBlock(color, blockSize, filename):
                 im.putpixel((j, k), tuple(color[i]))
 
     im.save(filename)
-
 
 def extractColor(filename, numOfColor=5, size=60):
     """
@@ -190,17 +231,14 @@ def extractColor(filename, numOfColor=5, size=60):
     Return:
      - color: 提取的颜色矩阵
     """
-    # 将文件路径去掉，使用当前文件夹路径
-    filename = filename.split('\\')[-1]
+    filename = fileNoPath(filename)
 
     # 获得主要颜色的矩阵
-    pixel = getPixel(filename)
-    color = K_means(array(pixel), numOfColor, 5)
+    pixel = filePixel(filename, 'Thumbnail')
+    color = K_means(array(pixel), numOfColor, 0)
     color = colorSort(color)
 
-    fname, ftype = filename.split('.')
-    output = fname + '_color.' + ftype
-    drawColorBlock(color, size, output)
+    drawColorBlock(color, size, fileNewName(filename, 'color'))
 
     return color
 
@@ -214,36 +252,155 @@ def deColor(filename, numOfColor=10):
      - filename: 图片文件名
      - numOfColor: 颜色数量。默认为 10
     """
-
-    # 将文件路径去掉，使用当前文件夹路径
-    filename = filename.split('\\')[-1]
-
-    with Image.open(filename) as im:
-        newIm = Image.new('RGB', im.size)
+    filename = fileNoPath(filename)
 
     # 聚类后的颜色矩阵
-    pixel = getPixel(filename)
+    pixel = filePixel(filename, 'Thumbnail')
     color = K_means(array(pixel), numOfColor, 5)
 
     # 颜色矩阵覆盖
+    with Image.open(filename) as im:
+        newIm = Image.new('RGB', im.size)
+        pixel = getAllPixel(im)
     xsize, ysize = newIm.size
     for i in range(xsize):
         for j in range(ysize):
             min_index = min_distance_index(color, pixel[i * ysize + j])
             newIm.putpixel((i,j), tuple(color[min_index]))
 
-    fname, ftype = filename.split('.')
-    output = fname + '_de.' + ftype
-    newIm.save(output)
+    newIm.save(fileNewName(filename, 'de'))
+
+
+def getStroke(im, color):
+    """
+    Descript:
+     - 通过主要颜色矩阵，获得线条矩阵
+
+    Args:
+     - im: 图片对象
+     - color: 主要颜色矩阵
+
+    Return:
+     - stroke: 线条矩阵
+
+    记录 每个像素点 与其周围八个像素点的 不同的数量
+    """
+    xsize, ysize = im.size
+    size = xsize * ysize
+
+    pixel = getAllPixel(im)
+    # 记录每个数据点的最近中心点的下标
+    labels = zeros((size, 1))
+    for i in range(size):
+        labels[i] = min_distance_index(color, pixel[i])
+
+    stroke = zeros((size, 1))
+    # 遍历周围 8 个点，最外围一圈像素不判断，懒得处理边界情况
+    for i in range(1, xsize - 1):
+        for j in range(1, ysize - 1):
+            index = i * ysize + j
+            if labels[index] != labels[index - ysize - 1]:
+                stroke[index] += 1
+            if labels[index] != labels[index - ysize]:
+                stroke[index] += 1
+            if labels[index] != labels[index - ysize + 1]:
+                stroke[index] += 1
+            if labels[index] != labels[index - 1]:
+                stroke[index] += 1
+            if labels[index] != labels[index + 1]:
+                stroke[index] += 1
+            if labels[index] != labels[index + ysize - 1]:
+                stroke[index] += 1
+            if labels[index] != labels[index + ysize]:
+                stroke[index] += 1
+            if labels[index] != labels[index + ysize + 1]:
+                stroke[index] += 1
+
+    return stroke
+
+
+def drawStroke(filename, k=10):
+    """
+    Descript:
+     - 通过原图片，绘制只有线条的图片
+
+    Args:
+     - filename: 文件名
+     - k: 描边阈值
+    """
+    filename = fileNoPath(filename)
+
+    # 得到主要颜色
+    pixel = filePixel(filename, 'Thumbnail')
+    color = K_means(array(pixel), k, 0)
+
+    # 得到边
+    with Image.open(filename) as im:
+        newIm = Image.new('RGB', im.size)
+        stroke = getStroke(im, color)
+
+    # 绘制线条
+    xsize, ysize = newIm.size
+    for i in range(xsize):
+        for j in range(ysize):
+            index = i * ysize + j
+            if stroke[index] == 3:
+                newIm.putpixel((i,j), (60, 60, 60))
+            elif stroke[index] == 4:
+                newIm.putpixel((i,j), (30, 30, 30))
+            elif stroke[index] == 5:
+                newIm.putpixel((i,j), (0, 0, 0))
+            else:
+                newIm.putpixel((i,j), (255, 255, 255))
+
+    newIm.save(fileNewName(filename, 'stroke'))
+
+
+def picStroke(filename, k=10):
+    """
+    Descript:
+     - 在原图片基础上，添加线条
+
+    Args:
+     - filename: 文件名
+     - k: 描边阈值
+    """
+    # 获得主要颜色的矩阵
+    filename = fileNoPath(filename)
+    pixel = filePixel(filename, 'Thumbnail')
+    color = K_means(array(pixel), k, 0)
+
+    # 添加线条
+    with Image.open(filename) as im:
+        stroke = getStroke(im, color)
+        xsize, ysize = im.size
+        for i in range(xsize):
+            for j in range(ysize):
+                index = i * ysize + j
+                if stroke[index] == 3:
+                    im.putpixel((i,j), (60, 60, 60))
+                elif stroke[index] == 4:
+                    im.putpixel((i,j), (30, 30, 30))
+                elif stroke[index] == 5:
+                    im.putpixel((i,j), (0, 0, 0))
+
+
+        im.save(fileNewName(filename, '&stroke'))
 
 
 def main():
+    print("extColor")
     # 外部传参
     if len(sys.argv) == 1:
         print('Not found pictures.')
     else:
         color = extractColor(sys.argv[1])
         print(color)
+
+    # extractColor('5.jpg')
+    # deColor('5.jpg')
+    # picStroke('4.jpg')
+
 
 
 if __name__ == "__main__":

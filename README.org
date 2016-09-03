@@ -1,0 +1,26 @@
+                [[./5_color.jpg]]
+* extColor
+
+
+** introduction
+这个 python 程序主要是用来处理图片的。功能很少，也很简单。例如，从图片中提取主要颜色，减少图片的颜色和绘制图片边线条（这些功能不知道怎么准确描述）。
+这个程序的主要算法只有一个——K-means 算法（最简单的聚类算法）。
+
+** Feature
+主要的功能函数如下：
+- extractColor(filename, numOfColor=5, size=60)
+- deColor(filename, numOfColor=10)
+- drawStroke(filename, k=10)
+- picStroke(filename, k=10)
+
+** Instance
+- Original Picture
+[[./6.jpg]]
+- extractColor
+[[./6_color.jpg]]
+- deColor
+[[./6_de.jpg]]
+- drawStroke
+[[./6_stroke.jpg]]
+- picStroke
+[[./6_&stroke.jpg]]
