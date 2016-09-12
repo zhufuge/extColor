@@ -6,7 +6,7 @@ from numpy import *
 from PIL import Image
 
 
-
+# K_means 算法
 def K_means(dataSet, k, e):
     """
     Descript:
@@ -118,13 +118,13 @@ def min_distance_index(center, data):
     return min_index
 
 
+# 文件名及路径处理
 def fileNoPath(filePathName):
     """
     Descript:
      - 去掉路径名
     """
     return filePathName.split('\\')[-1]
-
 
 def fileNewName(filename, string):
     """
@@ -135,7 +135,7 @@ def fileNewName(filename, string):
     return fname + '_' + string + '.' + ftype
 
 
-
+# 获得像素
 def getAllPixel(image):
     """
     Descript:
@@ -143,10 +143,16 @@ def getAllPixel(image):
     """
     pixel = []
     xsize, ysize = image.size
-    for i in range(xsize):
-        for j in range(ysize):
-            r, g, b = image.getpixel((i,j))
-            pixel.append((r, g, b))
+    if image.mode == 'RGB':
+        for i in range(xsize):
+            for j in range(ysize):
+                r, g, b = image.getpixel((i,j))
+                pixel.append((r, g, b))
+    else:
+        for i in range(xsize):
+            for j in range(ysize):
+                l = image.getpixel((i,j))
+                pixel.append((l))
 
     return pixel
 
@@ -178,6 +184,7 @@ def filePixel(filename, mode='normal'):
     return pixel
 
 
+# 颜色排序
 def colorSort(color):
     """
     Descript:
@@ -197,6 +204,7 @@ def colorSort(color):
     return color[argsort(color.T[0])]
 
 
+# 颜色块
 def drawColorBlock(color, blockSize, filename):
     """
     Descript:
@@ -209,7 +217,11 @@ def drawColorBlock(color, blockSize, filename):
     """
     numOfColor = color.shape[0]
 
-    im = Image.new('RGB', (blockSize * numOfColor, blockSize))
+    if color.shape[1] == 1:
+        im = Image.new('L', (blockSize * numOfColor, blockSize))
+    else:
+        im = Image.new('RGB', (blockSize * numOfColor, blockSize))
+
     # 将矩阵的每个点对应的图片的每个像素
     for i in range(numOfColor):
         for j in range(blockSize * i, blockSize * (i + 1)):
@@ -243,6 +255,7 @@ def extractColor(filename, numOfColor=5, size=60):
     return color
 
 
+# 减色
 def deColor(filename, numOfColor=10):
     """
     Descript:
@@ -260,7 +273,7 @@ def deColor(filename, numOfColor=10):
 
     # 颜色矩阵覆盖
     with Image.open(filename) as im:
-        newIm = Image.new('RGB', im.size)
+        newIm = Image.new(im.mode, im.size)
         pixel = getAllPixel(im)
     xsize, ysize = newIm.size
     for i in range(xsize):
@@ -271,6 +284,7 @@ def deColor(filename, numOfColor=10):
     newIm.save(fileNewName(filename, 'de'))
 
 
+# 边
 def getStroke(im, color):
     """
     Descript:
@@ -318,7 +332,6 @@ def getStroke(im, color):
 
     return stroke
 
-
 def drawStroke(filename, k=10):
     """
     Descript:
@@ -336,8 +349,20 @@ def drawStroke(filename, k=10):
 
     # 得到边
     with Image.open(filename) as im:
-        newIm = Image.new('RGB', im.size)
+        newIm = Image.new(im.mode, im.size)
         stroke = getStroke(im, color)
+
+    #可选色
+    if newIm.mode == 'RGB':
+        color_degree_3 = (60, 60, 60)
+        color_degree_4 = (30, 30, 30)
+        color_degree_5 = (0, 0, 0)
+        color_white = (255, 255, 255)
+    elif newIm.mode == 'L':
+        color_degree_3 = 60
+        color_degree_4 = 30
+        color_degree_5 = 0
+        color_white = 255
 
     # 绘制线条
     xsize, ysize = newIm.size
@@ -345,16 +370,15 @@ def drawStroke(filename, k=10):
         for j in range(ysize):
             index = i * ysize + j
             if stroke[index] == 3:
-                newIm.putpixel((i,j), (60, 60, 60))
+                newIm.putpixel((i,j), color_degree_3)
             elif stroke[index] == 4:
-                newIm.putpixel((i,j), (30, 30, 30))
+                newIm.putpixel((i,j), color_degree_4)
             elif stroke[index] == 5:
-                newIm.putpixel((i,j), (0, 0, 0))
+                newIm.putpixel((i,j), color_degree_5)
             else:
-                newIm.putpixel((i,j), (255, 255, 255))
+                newIm.putpixel((i,j), color_white)
 
     newIm.save(fileNewName(filename, 'stroke'))
-
 
 def picStroke(filename, k=10):
     """
@@ -374,15 +398,25 @@ def picStroke(filename, k=10):
     with Image.open(filename) as im:
         stroke = getStroke(im, color)
         xsize, ysize = im.size
+
+        if im.mode == 'RGB':
+            color_degree_3 = (60, 60, 60)
+            color_degree_4 = (30, 30, 30)
+            color_degree_5 = (0, 0, 0)
+        elif im.mode == 'L':
+            color_degree_3 = 60
+            color_degree_4 = 30
+            color_degree_5 = 0
+
         for i in range(xsize):
             for j in range(ysize):
                 index = i * ysize + j
                 if stroke[index] == 3:
-                    im.putpixel((i,j), (60, 60, 60))
+                    im.putpixel((i,j), color_degree_3)
                 elif stroke[index] == 4:
-                    im.putpixel((i,j), (30, 30, 30))
+                    im.putpixel((i,j), color_degree_4)
                 elif stroke[index] == 5:
-                    im.putpixel((i,j), (0, 0, 0))
+                    im.putpixel((i,j), color_degree_5)
 
 
         im.save(fileNewName(filename, '&stroke'))
